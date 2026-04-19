@@ -38,10 +38,15 @@ func (r *Repo) git(args ...string) *exec.Cmd {
 	return cmd
 }
 
-// Exists reports whether WorkDir looks like a git repository.
+// Exists reports whether WorkDir looks like a git repository (.git file or directory).
 func (r *Repo) Exists() bool {
-	st, err := os.Stat(filepath.Join(r.WorkDir, ".git"))
-	return err == nil && st.IsDir()
+	return ExistsAt(r.WorkDir)
+}
+
+// ExistsAt reports whether workDir is the root of a git working tree.
+func ExistsAt(workDir string) bool {
+	st, err := os.Stat(filepath.Join(workDir, ".git"))
+	return err == nil && (st.IsDir() || st.Mode().IsRegular())
 }
 
 // GetRemoteURL returns the fetch URL for the named remote (e.g. origin).

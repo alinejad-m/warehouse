@@ -26,6 +26,9 @@ func loadCfg() (*config.Config, error) {
 }
 
 func openRepo(cfg *config.Config) (*gitrepo.Repo, error) {
+	if err := config.ResolveGitWorkDir(cfg); err != nil {
+		return nil, err
+	}
 	repo := &gitrepo.Repo{
 		WorkDir: cfg.WorkDir,
 		Branch:  cfg.GitBranch,
@@ -34,7 +37,7 @@ func openRepo(cfg *config.Config) (*gitrepo.Repo, error) {
 		Email:   cfg.CommitEmail,
 	}
 	if !repo.Exists() {
-		return nil, fmt.Errorf("no git repository at %q — use your existing clone (see `warehouse remote`) or run `warehouse init` with WAREHOUSE_GIT_URL for a first-time clone", cfg.WorkDir)
+		return nil, fmt.Errorf("no git repository at %q", cfg.WorkDir)
 	}
 	return repo, nil
 }

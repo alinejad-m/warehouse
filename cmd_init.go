@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"warehouse/config"
 	"warehouse/internal/gitrepo"
 )
 
@@ -21,6 +23,24 @@ var initCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		// First-time clone when URL is set and target is not yet a git tree (skip ResolveGitWorkDir).
+		if strings.TrimSpace(cfg.GitURL) != "" && !gitrepo.ExistsAt(cfg.WorkDir) {
+			if filepath.Clean(cfg.WorkDir) == filepath.Clean(cwd) {
+				return fmt.Errorf("refusing to clone into the current working directory %q; set WAREHOUSE_WORKDIR to a new path (e.g. ./repo) or clone manually with git", cwd)
+			}
+			repo, err := gitrepo.InitOrClone(cfg.GitURL, cfg.WorkDir, cfg.GitBranch, cfg.GitRemote, cfg.CommitAuthor, cfg.CommitEmail)
+			if err != nil {
+				return err
+			}
+			if err := os.MkdirAll(cfg.DownloadDir, 0o755); err != nil {
+				return err
+			}
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "cloned: %s (branch %s)\n", repo.WorkDir, repo.Branch)
+			return nil
+		}
+		if err := config.ResolveGitWorkDir(cfg); err != nil {
+			return err
+		}
 		repo := &gitrepo.Repo{
 			WorkDir: cfg.WorkDir,
 			Branch:  cfg.GitBranch,
@@ -28,30 +48,19 @@ var initCmd = &cobra.Command{
 			Author:  cfg.CommitAuthor,
 			Email:   cfg.CommitEmail,
 		}
-		if repo.Exists() {
-			if u, e := gitrepo.GetRemoteURL(cfg.WorkDir, cfg.GitRemote); e == nil {
-				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "git remote %q: %s\n", cfg.GitRemote, u)
+		if !repo.Exists() {
+			if cfg.GitURL == "" {
+				return fmt.Errorf("no .git at %q — clone this repo here (git clone …) or set WAREHOUSE_GIT_URL and WAREHOUSE_WORKDIR to a new empty folder for automated clone", cfg.WorkDir)
 			}
-			if err := os.MkdirAll(cfg.DownloadDir, 0o755); err != nil {
-				return err
-			}
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "ready: %s (branch %s)\n", repo.WorkDir, repo.Branch)
-			return nil
+			return fmt.Errorf("no .git at %q after init", cfg.WorkDir)
 		}
-		if cfg.GitURL == "" {
-			return fmt.Errorf("no .git at %q — clone this repo here (git clone …) or set WAREHOUSE_GIT_URL and WAREHOUSE_WORKDIR to a new empty folder for automated clone", cfg.WorkDir)
-		}
-		if filepath.Clean(cfg.WorkDir) == filepath.Clean(cwd) {
-			return fmt.Errorf("refusing to clone into the current working directory %q; set WAREHOUSE_WORKDIR to a new path (e.g. ./repo) or clone manually with git", cwd)
-		}
-		repo, err = gitrepo.InitOrClone(cfg.GitURL, cfg.WorkDir, cfg.GitBranch, cfg.GitRemote, cfg.CommitAuthor, cfg.CommitEmail)
-		if err != nil {
-			return err
+		if u, e := gitrepo.GetRemoteURL(cfg.WorkDir, cfg.GitRemote); e == nil {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "git remote %q: %s\n", cfg.GitRemote, u)
 		}
 		if err := os.MkdirAll(cfg.DownloadDir, 0o755); err != nil {
 			return err
 		}
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "cloned: %s (branch %s)\n", repo.WorkDir, repo.Branch)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "ready: %s (branch %s)\n", repo.WorkDir, repo.Branch)
 		return nil
 	},
 }

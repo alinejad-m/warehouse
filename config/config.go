@@ -22,6 +22,8 @@ type Config struct {
 	CommitAuthor  string // GIT_AUTHOR_NAME override
 	CommitEmail   string // GIT_AUTHOR_EMAIL override
 	SkipTLSVerify bool   // WAREHOUSE_HTTP_INSECURE_SKIP_VERIFY (dev only)
+	// GitWorkDirExplicit is true when WAREHOUSE_WORKDIR was set (non-empty) in the environment.
+	GitWorkDirExplicit bool
 }
 
 // Load reads optional .env from path (if the file exists), then builds Config from environment variables.
@@ -52,14 +54,15 @@ func Load(dotenvPath string) (*Config, error) {
 	wd = filepath.Clean(wd)
 
 	cfg := &Config{
-		GitURL:       os.Getenv("WAREHOUSE_GIT_URL"),
-		GitBranch:    getenvDefault("WAREHOUSE_GIT_BRANCH", "main"),
-		GitRemote:    getenvDefault("WAREHOUSE_GIT_REMOTE", "origin"),
-		WorkDir:      wd,
-		ManifestPath: getenvDefault("WAREHOUSE_MANIFEST_PATH", "manifest/urls.csv"),
-		DownloadDir:  dl,
-		CommitAuthor: getenvDefault("WAREHOUSE_GIT_AUTHOR_NAME", "warehouse-bot"),
-		CommitEmail:  getenvDefault("WAREHOUSE_GIT_AUTHOR_EMAIL", "warehouse-bot@local"),
+		GitURL:             os.Getenv("WAREHOUSE_GIT_URL"),
+		GitBranch:          getenvDefault("WAREHOUSE_GIT_BRANCH", "main"),
+		GitRemote:          getenvDefault("WAREHOUSE_GIT_REMOTE", "origin"),
+		WorkDir:            wd,
+		GitWorkDirExplicit: WorkDirFromEnv(),
+		ManifestPath:       getenvDefault("WAREHOUSE_MANIFEST_PATH", "manifest/urls.csv"),
+		DownloadDir:        dl,
+		CommitAuthor:       getenvDefault("WAREHOUSE_GIT_AUTHOR_NAME", "warehouse-bot"),
+		CommitEmail:        getenvDefault("WAREHOUSE_GIT_AUTHOR_EMAIL", "warehouse-bot@local"),
 		SkipTLSVerify: os.Getenv("WAREHOUSE_HTTP_INSECURE_SKIP_VERIFY") == "true" ||
 			os.Getenv("WAREHOUSE_HTTP_INSECURE_SKIP_VERIFY") == "1",
 	}
