@@ -1,0 +1,20 @@
+services:
+  warehouse:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: warehouse:local
+    environment:
+      WAREHOUSE_GIT_URL: ${WAREHOUSE_GIT_URL:?set WAREHOUSE_GIT_URL in .env or shell}
+      WAREHOUSE_GIT_BRANCH: ${WAREHOUSE_GIT_BRANCH:-main}
+      WAREHOUSE_WORKDIR: /data/repo
+      WAREHOUSE_MANIFEST_PATH: ${WAREHOUSE_MANIFEST_PATH:-manifest/urls.csv}
+      WAREHOUSE_DOWNLOAD_DIR: /data/downloads
+      WAREHOUSE_GIT_AUTHOR_NAME: ${WAREHOUSE_GIT_AUTHOR_NAME:-warehouse-bot}
+      WAREHOUSE_GIT_AUTHOR_EMAIL: ${WAREHOUSE_GIT_AUTHOR_EMAIL:-warehouse-bot@local}
+    volumes:
+      # Bind mounts so downloads land on the host (adjust paths as needed).
+      - ../../warehouse-data/repo:/data/repo
+      - ../../warehouse-data/downloads:/data/downloads
+    # Examples: ["./warehouse", "init"] then ["./warehouse", "add", "https://..."]
+    command: ["./warehouse", "list", "--pull"]

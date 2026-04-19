@@ -1,0 +1,6 @@
+.env
+warehouse-data/
+dist/
+server
+warehouse
+*.exe
