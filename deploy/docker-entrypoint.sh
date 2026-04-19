@@ -11,4 +11,10 @@ if command -v ssh-keyscan >/dev/null 2>&1; then
 	fi
 fi
 
+# working_dir is often /data/repo (git mount); ./warehouse would resolve there and miss the image binary.
+if [ "$1" = "./warehouse" ]; then
+	shift
+	exec /usr/local/bin/warehouse "$@"
+fi
+
 exec "$@"
