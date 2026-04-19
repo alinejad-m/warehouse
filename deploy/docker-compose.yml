@@ -22,5 +22,5 @@ services:
       # GitHub over SSH: mount your host keys (same as logging in with ssh on the server).
       # Ensure `git remote get-url origin` inside the repo is git@github.com:ORG/REPO.git (not https).
       - ${HOME}/.ssh:/root/.ssh:ro
-    # Examples: ["./warehouse", "download"]
-    command: ["./warehouse", "list", "--pull"]
+    # Binary is on PATH (`/usr/local/bin/warehouse`); cwd is /data/repo for git.
+    command: ["warehouse", "list", "--pull"]

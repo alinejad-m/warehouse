@@ -13,9 +13,10 @@ FROM alpine:3.20
 RUN apk add --no-cache ca-certificates git openssh-client
 
 WORKDIR /app
-COPY --from=builder /out/warehouse ./warehouse
+COPY --from=builder /out/warehouse /usr/local/bin/warehouse
+RUN chmod +x /usr/local/bin/warehouse
 COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["./warehouse", "list", "--pull"]
+CMD ["warehouse", "list", "--pull"]
