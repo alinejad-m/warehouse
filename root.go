@@ -23,5 +23,5 @@ func Execute() error {
 
 func init() {
 	bindConfigFlag(rootCmd)
-	rootCmd.AddCommand(initCmd, syncCmd, addCmd, listCmd, downloadCmd, cleanupCmd)
+	rootCmd.AddCommand(initCmd, remoteCmd, syncCmd, addCmd, listCmd, downloadCmd, cleanupCmd)
 }

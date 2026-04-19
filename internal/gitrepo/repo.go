@@ -13,8 +13,17 @@ import (
 type Repo struct {
 	WorkDir string
 	Branch  string
-	Author  string
-	Email   string
+	// Remote is the remote name for pull/push (default origin).
+	Remote string
+	Author string
+	Email  string
+}
+
+func (r *Repo) remoteName() string {
+	if r.Remote != "" {
+		return r.Remote
+	}
+	return "origin"
 }
 
 func (r *Repo) git(args ...string) *exec.Cmd {
@@ -35,6 +44,20 @@ func (r *Repo) Exists() bool {
 	return err == nil && st.IsDir()
 }
 
+// GetRemoteURL returns the fetch URL for the named remote (e.g. origin).
+func GetRemoteURL(workDir, remote string) (string, error) {
+	if remote == "" {
+		remote = "origin"
+	}
+	cmd := exec.Command("git", "remote", "get-url", remote)
+	cmd.Dir = workDir
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("git remote get-url %s: %w", remote, err)
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
 // Clone runs git clone into parent of WorkDir (WorkDir must not exist) or empty dir.
 func Clone(remoteURL, workDir, branch string) error {
 	parent := filepath.Dir(workDir)
@@ -52,9 +75,9 @@ func Clone(remoteURL, workDir, branch string) error {
 	return nil
 }
 
-// InitOrClone ensures a repository exists at WorkDir.
-func InitOrClone(remoteURL, workDir, branch, author, email string) (*Repo, error) {
-	repo := &Repo{WorkDir: workDir, Branch: branch, Author: author, Email: email}
+// InitOrClone clones remoteURL into workDir when .git is missing.
+func InitOrClone(remoteURL, workDir, branch, remote, author, email string) (*Repo, error) {
+	repo := &Repo{WorkDir: workDir, Branch: branch, Remote: remote, Author: author, Email: email}
 	if repo.Exists() {
 		return repo, nil
 	}
@@ -69,7 +92,7 @@ func InitOrClone(remoteURL, workDir, branch, author, email string) (*Repo, error
 
 // Pull runs git pull --ff-only for the configured branch.
 func (r *Repo) Pull() error {
-	out, err := r.git("pull", "origin", r.Branch, "--ff-only").CombinedOutput()
+	out, err := r.git("pull", r.remoteName(), r.Branch, "--ff-only").CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("git pull: %w\n%s", err, strings.TrimSpace(string(out)))
 	}
@@ -117,9 +140,9 @@ func (r *Repo) Commit(message string) error {
 	return nil
 }
 
-// Push runs git push origin branch.
+// Push runs git push <remote> branch.
 func (r *Repo) Push() error {
-	out, err := r.git("push", "origin", r.Branch).CombinedOutput()
+	out, err := r.git("push", r.remoteName(), r.Branch).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("git push: %w\n%s", err, strings.TrimSpace(string(out)))
 	}

@@ -1,5 +1,6 @@
 .env
 warehouse-data/
+downloads/
 dist/
 server
 warehouse

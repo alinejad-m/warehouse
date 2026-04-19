@@ -26,10 +26,17 @@ func loadCfg() (*config.Config, error) {
 }
 
 func openRepo(cfg *config.Config) (*gitrepo.Repo, error) {
-	if err := cfg.ValidateGitURL(); err != nil {
-		return nil, err
+	repo := &gitrepo.Repo{
+		WorkDir: cfg.WorkDir,
+		Branch:  cfg.GitBranch,
+		Remote:  cfg.GitRemote,
+		Author:  cfg.CommitAuthor,
+		Email:   cfg.CommitEmail,
 	}
-	return gitrepo.InitOrClone(cfg.GitURL, cfg.WorkDir, cfg.GitBranch, cfg.CommitAuthor, cfg.CommitEmail)
+	if !repo.Exists() {
+		return nil, fmt.Errorf("no git repository at %q — use your existing clone (see `warehouse remote`) or run `warehouse init` with WAREHOUSE_GIT_URL for a first-time clone", cfg.WorkDir)
+	}
+	return repo, nil
 }
 
 func manifestAbs(cfg *config.Config) string {

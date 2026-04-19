@@ -10,7 +10,7 @@ RUN CGO_ENABLED=0 go build -ldflags="-w -s" -o /out/warehouse .
 
 # Runtime: git required for pull/push/rm
 FROM alpine:3.20
-RUN apk add --no-cache ca-certificates git
+RUN apk add --no-cache ca-certificates git openssh-client
 
 WORKDIR /app
 COPY --from=builder /out/warehouse ./warehouse
